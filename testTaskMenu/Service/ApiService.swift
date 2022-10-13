@@ -19,7 +19,7 @@ private enum ApiUrl: String {
 
 private enum ApiKey: String {
     case header = "X-RapidAPI-Key"
-    case value = "SIGN-UP-FOR-KEY"
+    case value = "466cd68c1cmsh01b76c38890b43dp1d7841jsnffd9eb7d1eeb"
 }
 
 private enum ApiHost: String {
@@ -31,15 +31,15 @@ protocol ApiClient {
     func getCategories(completion: @escaping (Result<[ProductCategory], ApiError>) -> Void)
 }
 
-class ApiClientImpl: ApiClient {
-    let reqUrl = URL(string: ApiUrl.allMenu.rawValue)!
-    let headers = [
+final class ApiClientImpl: ApiClient {
+    private let reqUrl = URL(string: ApiUrl.allMenu.rawValue)!
+    private let headers: HTTPHeaders = [
         ApiKey.header.rawValue: ApiKey.value.rawValue,
         ApiHost.header.rawValue: ApiHost.value.rawValue
     ]
     
     func getCategories(completion: @escaping (Result<[ProductCategory], ApiError>) -> Void) {
-        AF.request(reqUrl).responseData { response in
+        AF.request(reqUrl, headers: headers).responseData { response in
             if let data = response.value,
                let response = response.response {
                 let categories: [ProductCategory]? = try? JSONDecoder().decode([ProductCategory].self, from: data)
