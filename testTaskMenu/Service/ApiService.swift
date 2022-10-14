@@ -15,6 +15,7 @@ enum ApiError: Error {
 
 private enum ApiUrl: String {
     case allMenu = "https://burger-king-menu.p.rapidapi.com/categories"
+    case allProducts = "https://burger-king-menu.p.rapidapi.com/products"
 }
 
 private enum ApiKey: String {
@@ -29,16 +30,17 @@ private enum ApiHost: String {
 
 protocol ApiClient {
     func getCategories(completion: @escaping (Result<[ProductCategory], ApiError>) -> Void)
+    func getProductList(completion: @escaping (Result<[Product], ApiError>) -> Void)
 }
 
 final class ApiClientImpl: ApiClient {
-    private let reqUrl = URL(string: ApiUrl.allMenu.rawValue)!
     private let headers: HTTPHeaders = [
         ApiKey.header.rawValue: ApiKey.value.rawValue,
         ApiHost.header.rawValue: ApiHost.value.rawValue
     ]
     
     func getCategories(completion: @escaping (Result<[ProductCategory], ApiError>) -> Void) {
+        let reqUrl = URL(string: ApiUrl.allMenu.rawValue)!
         AF.request(reqUrl, headers: headers).responseData { response in
             if let data = response.value,
                let response = response.response {
@@ -46,6 +48,26 @@ final class ApiClientImpl: ApiClient {
                 if let categories = categories {
                     if (200...299).contains(response.statusCode) {
                         completion(.success(categories))
+                    } else {
+                        completion(.failure(ApiError.wrongData))
+                    }
+                }
+            } else {
+                completion(.failure(ApiError.noData))
+            }
+        }
+    }
+    
+    func getProductList(completion: @escaping (Result<[Product], ApiError>) -> Void) {
+        let reqUrl = URL(string: ApiUrl.allProducts.rawValue)!
+
+        AF.request(reqUrl, headers: headers).responseData { response in
+            if let data = response.value,
+               let response = response.response {
+                let products: [Product]? = try? JSONDecoder().decode([Product].self, from: data)
+                if let products = products {
+                    if (200...299).contains(response.statusCode) {
+                        completion(.success(products))
                     } else {
                         completion(.failure(ApiError.wrongData))
                     }

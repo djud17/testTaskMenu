@@ -29,7 +29,18 @@ final class MenuViewController: UIViewController {
     }()
     
     private let apiClient: ApiClient = ApiClientImpl()
-    var productCategories: [ProductCategory]?
+    var productCategories: [ProductCategory]? {
+        didSet {
+            productCategories?.sort {$0.id < $1.id}
+        }
+    }
+    var products: [Product]? {
+        didSet {
+            parseProducts()
+            menuTableView.reloadData()
+        }
+    }
+    var allProducts = [[Product]]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -39,8 +50,8 @@ final class MenuViewController: UIViewController {
     }
     
     private func loadData() {
-        apiClient.getCategories { result in
-            DispatchQueue.main.async {
+        DispatchQueue.main.async {
+            self.apiClient.getCategories { result in
                 switch result {
                 case .failure(let error):
                     self.productCategories = []
@@ -48,8 +59,16 @@ final class MenuViewController: UIViewController {
                 case .success(let categories):
                     self.productCategories = categories
                 }
-                self.menuTableView.reloadData()
                 self.filtersCollectionView.reloadData()
+            }
+            self.apiClient.getProductList { result in
+                switch result {
+                case .failure(let error):
+                    self.products = []
+                    print(error)
+                case .success(let products):
+                    self.products = products
+                }
             }
         }
     }
@@ -137,6 +156,8 @@ final class MenuViewController: UIViewController {
     @objc private func filterButtonTapped(sender: UIButton) {
         selectedFilterId = sender.tag
         filtersCollectionView.reloadData()
+        let index = IndexPath(row: 0, section: selectedFilterId - 1)
+        menuTableView.scrollToRow(at: index, at: .top, animated: true)
     }
     
     private func setButtonColor(_ button: UIButton?) {
@@ -153,6 +174,27 @@ final class MenuViewController: UIViewController {
                 button.setTitleColor(buttonColor, for: .normal)
             }
         }
+    }
+    
+    private func parseProducts() {
+        if let productCategories = productCategories {
+            allProducts.removeAll()
+            for section in 0..<productCategories.count {
+                let filteredArr = products?.filter({ product in
+                    var category: Int = 0
+                    switch product.categoryID {
+                    case .integerArray(let array):
+                        category = array.first!
+                    case .string(_):
+                        break
+                    }
+                    return category == (section + 1)
+                })
+                allProducts.append([Product]())
+                filteredArr?.forEach { allProducts[section].append($0)}
+            }
+        }
+        print(allProducts.count)
     }
 }
 
@@ -188,18 +230,26 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        100
+        150
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        allProducts[section].count
+    }
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
         productCategories?.count ?? 0
+    }
+    
+    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+        productCategories?[section].name
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "menuCell") as? CustomTableViewCell
-        if let categories = productCategories {
-            let model = categories[indexPath.row]
-            let photoUrl = URL(string: model.img)
+        if products != nil {
+            let model = allProducts[indexPath.section][indexPath.row]
+            let photoUrl = URL(string: model.image)
             let processor = DownsamplingImageProcessor(size: cell?.productImageView.bounds.size ?? CGSize())
             |> RoundCornerImageProcessor(cornerRadius: 10)
             cell?.productImageView.kf.indicatorType = .activity
@@ -211,8 +261,15 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
                     .transition(.fade(1)),
                     .cacheOriginalImage
                 ])
-            cell?.titleLabel.text = model.name
-            cell?.descriptionLabel.text = String(model.id)
+            var modelName = ""
+            switch model.name {
+            case .string(let name):
+                modelName = name
+            case .integerArray(_):
+                break
+            }
+            cell?.titleLabel.text = modelName
+            cell?.descriptionLabel.text = model.productDescription
         }
         return cell ?? UITableViewCell()
     }

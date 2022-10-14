@@ -28,7 +28,8 @@ final class AdvertCollectionViewCell: UICollectionViewCell {
     }
     
     private func setupView() {
-        layer.borderColor = UIColor.lightGray.cgColor
+        let buttonColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
+        layer.borderColor = buttonColor.cgColor
         layer.borderWidth = 3
         layer.cornerRadius = 10
         addSubview(imageView)
@@ -83,7 +84,8 @@ final class FilterCollectionViewCell: UICollectionViewCell {
 final class CustomTableViewCell: UITableViewCell {
     private var backView: UIView = {
         let view = UIView()
-        view.layer.borderColor = UIColor.lightGray.cgColor
+        let buttonColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
+        view.layer.borderColor = buttonColor.cgColor
         view.layer.borderWidth = 2
         view.layer.cornerRadius = 10
         return view
@@ -91,15 +93,15 @@ final class CustomTableViewCell: UITableViewCell {
     var titleLabel: UILabel = {
         let label = UILabel()
         label.textColor = .black
-        label.font = .systemFont(ofSize: 18)
-        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 16)
+        label.textAlignment = .left
         return label
     }()
     var descriptionLabel: UILabel = {
         let label = UILabel()
         label.textColor = .lightGray
-        label.font = .systemFont(ofSize: 16)
-        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 12)
+        label.textAlignment = .left
         label.numberOfLines = 0
         return label
     }()
@@ -146,6 +148,8 @@ final class CustomTableViewCell: UITableViewCell {
         descriptionLabel.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(5)
             make.leading.equalTo(productImageView.snp.trailing).offset(20)
+            make.trailing.equalToSuperview()
+            make.bottom.equalToSuperview()
         }
     }
 }
