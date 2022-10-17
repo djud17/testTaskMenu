@@ -45,14 +45,4 @@ enum CategoryID: Codable {
                                          DecodingError.Context(codingPath: decoder.codingPath,
                                                                debugDescription: "Wrong type for CategoryID"))
     }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .integerArray(let intValue):
-            try container.encode(intValue)
-        case .string(let stringValue):
-            try container.encode(stringValue)
-        }
-    }
 }

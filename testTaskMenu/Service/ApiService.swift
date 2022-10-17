@@ -40,40 +40,43 @@ final class ApiClientImpl: ApiClient {
     ]
     
     func getCategories(completion: @escaping (Result<[ProductCategory], ApiError>) -> Void) {
-        let reqUrl = URL(string: ApiUrl.allMenu.rawValue)!
-        AF.request(reqUrl, headers: headers).responseData { response in
-            if let data = response.value,
-               let response = response.response {
-                let categories: [ProductCategory]? = try? JSONDecoder().decode([ProductCategory].self, from: data)
-                if let categories = categories {
-                    if (200...299).contains(response.statusCode) {
-                        completion(.success(categories))
-                    } else {
-                        completion(.failure(ApiError.wrongData))
+        let reqUrl = URL(string: ApiUrl.allMenu.rawValue)
+        if let url = reqUrl {
+            AF.request(url, headers: headers).responseData { response in
+                if let data = response.value,
+                   let response = response.response {
+                    let categories: [ProductCategory]? = try? JSONDecoder().decode([ProductCategory].self, from: data)
+                    if let categories = categories {
+                        if (200...299).contains(response.statusCode) {
+                            completion(.success(categories))
+                        } else {
+                            completion(.failure(ApiError.wrongData))
+                        }
                     }
+                } else {
+                    completion(.failure(ApiError.noData))
                 }
-            } else {
-                completion(.failure(ApiError.noData))
             }
         }
     }
     
     func getProductList(completion: @escaping (Result<[Product], ApiError>) -> Void) {
-        let reqUrl = URL(string: ApiUrl.allProducts.rawValue)!
-
-        AF.request(reqUrl, headers: headers).responseData { response in
-            if let data = response.value,
-               let response = response.response {
-                let products: [Product]? = try? JSONDecoder().decode([Product].self, from: data)
-                if let products = products {
-                    if (200...299).contains(response.statusCode) {
-                        completion(.success(products))
-                    } else {
-                        completion(.failure(ApiError.wrongData))
+        let reqUrl = URL(string: ApiUrl.allProducts.rawValue)
+        if let url = reqUrl {
+            AF.request(url, headers: headers).responseData { response in
+                if let data = response.value,
+                   let response = response.response {
+                    let products: [Product]? = try? JSONDecoder().decode([Product].self, from: data)
+                    if let products = products {
+                        if (200...299).contains(response.statusCode) {
+                            completion(.success(products))
+                        } else {
+                            completion(.failure(ApiError.wrongData))
+                        }
                     }
+                } else {
+                    completion(.failure(ApiError.noData))
                 }
-            } else {
-                completion(.failure(ApiError.noData))
             }
         }
     }

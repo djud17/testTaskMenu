@@ -10,23 +10,14 @@ import SnapKit
 import Kingfisher
 
 final class MenuViewController: UIViewController {
-    private var advertBackView: UIView = {
-        let view = UIView()
-        return view
-    }()
+    private let advertBackView = UIView()
     private var advertCollectionView: UICollectionView!
     
-    private var filtersBackView: UIView = {
-        let view = UIView()
-        return view
-    }()
+    private let filtersBackView = UIView()
     private var filtersCollectionView: UICollectionView!
     private var selectedFilterId = 1
     
-    private var menuTableView: UITableView = {
-        let tableVIew = UITableView()
-        return tableVIew
-    }()
+    private let menuTableView = UITableView()
     
     private let apiClient: ApiClient = ApiClientImpl()
     var productCategories: [ProductCategory]? {
@@ -34,13 +25,13 @@ final class MenuViewController: UIViewController {
             productCategories?.sort {$0.id < $1.id}
         }
     }
-    var products: [Product]? {
+    var productsFromJson: [Product]? {
         didSet {
             parseProducts()
             menuTableView.reloadData()
         }
     }
-    var allProducts = [[Product]]()
+    var parsedAllProducts = [[Product]]()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -64,10 +55,10 @@ final class MenuViewController: UIViewController {
             self.apiClient.getProductList { result in
                 switch result {
                 case .failure(let error):
-                    self.products = []
+                    self.productsFromJson = []
                     print(error)
                 case .success(let products):
-                    self.products = products
+                    self.productsFromJson = products
                 }
             }
         }
@@ -82,6 +73,7 @@ final class MenuViewController: UIViewController {
     }
     
     private func setupAdvertBlock() {
+        advertBackView.backgroundColor = .white
         view.addSubview(advertBackView)
         advertBackView.snp.makeConstraints { make in
             make.top.equalToSuperview().inset(60)
@@ -109,9 +101,8 @@ final class MenuViewController: UIViewController {
     }
     
     private func setupFiltersView() {
-        view.addSubview(filtersBackView)
-        
         filtersBackView.backgroundColor = .white
+        view.addSubview(filtersBackView)
         
         filtersBackView.snp.makeConstraints { make in
             make.top.equalTo(advertBackView.snp.bottom)
@@ -145,6 +136,7 @@ final class MenuViewController: UIViewController {
         menuTableView.backgroundColor = .white
         menuTableView.allowsSelection = false
         menuTableView.separatorColor = .white
+        
         view.addSubview(menuTableView)
         
         menuTableView.snp.makeConstraints { make in
@@ -155,9 +147,15 @@ final class MenuViewController: UIViewController {
     
     @objc private func filterButtonTapped(sender: UIButton) {
         selectedFilterId = sender.tag
+        let selectedIndex = selectedFilterId - 1
+        let indexForTableView = IndexPath(row: 0, section: selectedIndex)
+        let indexForCollectionView = IndexPath(row: selectedIndex, section: 0)
+        
         filtersCollectionView.reloadData()
-        let index = IndexPath(row: 0, section: selectedFilterId - 1)
-        menuTableView.scrollToRow(at: index, at: .top, animated: true)
+        filtersCollectionView.scrollToItem(at: indexForCollectionView,
+                                           at: .centeredHorizontally,
+                                           animated: true)
+        menuTableView.scrollToRow(at: indexForTableView, at: .top, animated: true)
     }
     
     private func setButtonColor(_ button: UIButton?) {
@@ -178,55 +176,55 @@ final class MenuViewController: UIViewController {
     
     private func parseProducts() {
         if let productCategories = productCategories {
-            allProducts.removeAll()
+            parsedAllProducts.removeAll()
             for section in 0..<productCategories.count {
-                let filteredArr = products?.filter({ product in
+                let filteredArr = productsFromJson?.filter { product in
                     var category: Int = 0
                     switch product.categoryID {
                     case .integerArray(let array):
-                        category = array.first!
-                    case .string(_):
+                        category = array.first ?? 0
+                    default:
                         break
                     }
                     return category == (section + 1)
-                })
-                allProducts.append([Product]())
-                filteredArr?.forEach { allProducts[section].append($0)}
+                }
+                parsedAllProducts.append([Product]())
+                filteredArr?.forEach { parsedAllProducts[section].append($0) }
             }
         }
-        print(allProducts.count)
     }
 }
 
 extension MenuViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        collectionView == self.advertCollectionView ? 3 : productCategories?.count ?? 0
+        collectionView == advertCollectionView ? 3 : productCategories?.count ?? 0
     }
     
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        if collectionView == self.advertCollectionView {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "advertCell",
-                                                          for: indexPath) as? AdvertCollectionViewCell
-            cell?.imageView.image = UIImage(named: "advert")
-            return cell ?? UICollectionViewCell()
-        } else {
-            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "filterCell",
-                                                          for: indexPath) as? FilterCollectionViewCell
-            let model = productCategories?[indexPath.row]
-            cell?.filterButton.setTitle(model?.name, for: .normal)
-            cell?.filterButton.tag = model?.id ?? 0
-            cell?.filterButton.addTarget(self, action: #selector(filterButtonTapped), for: .touchUpInside)
-            setButtonColor(cell?.filterButton)
-            
-            return cell ?? UICollectionViewCell()
+        if collectionView == advertCollectionView,
+           let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "advertCell",
+                                                         for: indexPath) as? AdvertCollectionViewCell {
+            cell.imageView.image = UIImage(named: "advert")
+            return cell
+        } else if collectionView == filtersCollectionView,
+                  let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "filterCell",
+                                                                for: indexPath) as? FilterCollectionViewCell {
+            if let model = productCategories?[indexPath.row] {
+                cell.filterButton.setTitle(model.name, for: .normal)
+                cell.filterButton.tag = model.id
+                cell.filterButton.addTarget(self, action: #selector(filterButtonTapped), for: .touchUpInside)
+                setButtonColor(cell.filterButton)
+            }
+            return cell
         }
+        return UICollectionViewCell()
     }
 }
 
 extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        10
+        40
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
@@ -234,7 +232,7 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        allProducts[section].count
+        parsedAllProducts[section].count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -247,8 +245,8 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "menuCell") as? CustomTableViewCell
-        if products != nil {
-            let model = allProducts[indexPath.section][indexPath.row]
+        if productsFromJson != nil {
+            let model = parsedAllProducts[indexPath.section][indexPath.row]
             let photoUrl = URL(string: model.image)
             let processor = DownsamplingImageProcessor(size: cell?.productImageView.bounds.size ?? CGSize())
             |> RoundCornerImageProcessor(cornerRadius: 10)
@@ -265,7 +263,7 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
             switch model.name {
             case .string(let name):
                 modelName = name
-            case .integerArray(_):
+            default:
                 break
             }
             cell?.titleLabel.text = modelName

@@ -8,6 +8,8 @@
 import UIKit
 import SnapKit
 
+private let lightRedColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
+
 final class AdvertCollectionViewCell: UICollectionViewCell {
     let imageView: UIImageView = {
         let image = UIImageView()
@@ -28,8 +30,7 @@ final class AdvertCollectionViewCell: UICollectionViewCell {
     }
     
     private func setupView() {
-        let buttonColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
-        layer.borderColor = buttonColor.cgColor
+        layer.borderColor = lightRedColor.cgColor
         layer.borderWidth = 3
         layer.cornerRadius = 10
         addSubview(imageView)
@@ -65,11 +66,10 @@ final class FilterCollectionViewCell: UICollectionViewCell {
     }
     
     private func setupView() {
-        let buttonColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
-        filterButton.backgroundColor = buttonColor
-        filterButton.layer.borderColor = buttonColor.cgColor
-        filterButton.setTitleColor(buttonColor.withAlphaComponent(1), for: .normal)
-        filterButton.setTitleColor(buttonColor, for: .highlighted)
+        filterButton.backgroundColor = lightRedColor
+        filterButton.layer.borderColor = lightRedColor.cgColor
+        filterButton.setTitleColor(lightRedColor.withAlphaComponent(1), for: .normal)
+        filterButton.setTitleColor(lightRedColor, for: .highlighted)
         filterButton.titleLabel?.font = UIFont.systemFont(ofSize: 13)
         addSubview(filterButton)
     }
@@ -82,22 +82,21 @@ final class FilterCollectionViewCell: UICollectionViewCell {
 }
 
 final class CustomTableViewCell: UITableViewCell {
-    private var backView: UIView = {
+    private let backView: UIView = {
         let view = UIView()
-        let buttonColor = UIColor(red: 0.992, green: 0.227, blue: 0.412, alpha: 0.2)
-        view.layer.borderColor = buttonColor.cgColor
+        view.layer.borderColor = lightRedColor.cgColor
         view.layer.borderWidth = 2
         view.layer.cornerRadius = 10
         return view
     }()
-    var titleLabel: UILabel = {
+    let titleLabel: UILabel = {
         let label = UILabel()
         label.textColor = .black
         label.font = .systemFont(ofSize: 16)
         label.textAlignment = .left
         return label
     }()
-    var descriptionLabel: UILabel = {
+    let descriptionLabel: UILabel = {
         let label = UILabel()
         label.textColor = .lightGray
         label.font = .systemFont(ofSize: 12)
@@ -124,10 +123,10 @@ final class CustomTableViewCell: UITableViewCell {
     }
     
     private func setupView() {
-        addSubview(backView)
         backView.addSubview(titleLabel)
         backView.addSubview(descriptionLabel)
         backView.addSubview(productImageView)
+        addSubview(backView)
     }
     
     private func setupConstraints() {
@@ -148,8 +147,7 @@ final class CustomTableViewCell: UITableViewCell {
         descriptionLabel.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(5)
             make.leading.equalTo(productImageView.snp.trailing).offset(20)
-            make.trailing.equalToSuperview()
-            make.bottom.equalToSuperview()
+            make.trailing.bottom.equalToSuperview()
         }
     }
 }
