@@ -22,17 +22,21 @@ final class MenuViewController: UIViewController {
     private let apiClient: ApiClient = ApiClientImpl()
     private let viewConfigurator = ViewConfigurator.shared
     
+    private var isDataLoaded = (categories: false, products: false) {
+        didSet {
+            if isDataLoaded.categories && isDataLoaded.products {
+                parseProducts()
+                menuTableView.reloadData()
+            }
+        }
+    }
+    
     var productCategories: [ProductCategory]? {
         didSet {
             productCategories?.sort {$0.id < $1.id}
         }
     }
-    var productsFromJson: [Product]? {
-        didSet {
-            parseProducts()
-            menuTableView.reloadData()
-        }
-    }
+    var productsFromJson: [Product]?
     var parsedAllProducts = [[Product]]()
     
     override func viewDidLoad() {
@@ -51,6 +55,7 @@ final class MenuViewController: UIViewController {
                     print(error)
                 case .success(let categories):
                     self.productCategories = categories
+                    self.isDataLoaded.categories = true
                 }
                 self.filtersCollectionView.reloadData()
             }
@@ -61,6 +66,7 @@ final class MenuViewController: UIViewController {
                     print(error)
                 case .success(let products):
                     self.productsFromJson = products
+                    self.isDataLoaded.products = true
                 }
             }
         }
@@ -87,7 +93,7 @@ final class MenuViewController: UIViewController {
     }
     
     private func setupTableView() {
-        menuTableView = viewConfigurator.setupTableView(view, under: filtersBackView)
+        menuTableView = viewConfigurator.setupTableView(view, under: filtersBackView)        
         menuTableView.dataSource = self
         menuTableView.delegate = self
     }
@@ -124,10 +130,11 @@ final class MenuViewController: UIViewController {
     }
     
     private func parseProducts() {
-        if let productCategories = productCategories {
+        if let productCategories = productCategories,
+           let productsFromJson = productsFromJson {
             parsedAllProducts.removeAll()
             for section in 0..<productCategories.count {
-                let filteredArr = productsFromJson?.filter { product in
+                let filteredArr = productsFromJson.filter { product in
                     var category: Int = 0
                     switch product.categoryID {
                     case .integerArray(let array):
@@ -138,7 +145,7 @@ final class MenuViewController: UIViewController {
                     return category == (section + 1)
                 }
                 parsedAllProducts.append([Product]())
-                filteredArr?.forEach { parsedAllProducts[section].append($0) }
+                filteredArr.forEach { parsedAllProducts[section].append($0) }
             }
         }
     }
@@ -219,5 +226,17 @@ extension MenuViewController: UITableViewDataSource, UITableViewDelegate {
             cell?.descriptionLabel.text = model.productDescription
         }
         return cell ?? UITableViewCell()
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let indexPath = menuTableView.indexPathsForVisibleRows?.first
+        let selectedIndex = indexPath?.section ?? 0
+        selectedFilterId = selectedIndex + 1
+        let indexForCollectionView = IndexPath(row: selectedIndex, section: 0)
+        
+        filtersCollectionView.scrollToItem(at: indexForCollectionView,
+                                           at: .centeredHorizontally,
+                                           animated: true)
+        filtersCollectionView.reloadData()
     }
 }
