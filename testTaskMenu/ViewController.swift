@@ -10,16 +10,18 @@ import SnapKit
 import Kingfisher
 
 final class MenuViewController: UIViewController {
-    private let advertBackView = UIView()
+    private var advertBackView: UIView!
     private var advertCollectionView: UICollectionView!
     
-    private let filtersBackView = UIView()
+    private var filtersBackView: UIView!
     private var filtersCollectionView: UICollectionView!
     private var selectedFilterId = 1
     
-    private let menuTableView = UITableView()
+    private var menuTableView: UITableView!
     
     private let apiClient: ApiClient = ApiClientImpl()
+    private let viewConfigurator = ViewConfigurator.shared
+    
     var productCategories: [ProductCategory]? {
         didSet {
             productCategories?.sort {$0.id < $1.id}
@@ -73,76 +75,21 @@ final class MenuViewController: UIViewController {
     }
     
     private func setupAdvertBlock() {
-        advertBackView.backgroundColor = .white
-        view.addSubview(advertBackView)
-        advertBackView.snp.makeConstraints { make in
-            make.top.equalToSuperview().inset(60)
-            make.leading.trailing.equalToSuperview()
-            make.height.equalTo(150)
-        }
-        
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        layout.sectionInset = UIEdgeInsets(top: 20, left: 10, bottom: 10, right: 10)
-        layout.itemSize = CGSize(width: 300, height: 120)
-        layout.scrollDirection = .horizontal
-        
-        advertCollectionView = UICollectionView(frame: CGRect(), collectionViewLayout: layout)
-        advertCollectionView.register(AdvertCollectionViewCell.self, forCellWithReuseIdentifier: "advertCell")
-        advertCollectionView.backgroundColor = .white
-        advertCollectionView.alwaysBounceHorizontal = true
+        advertBackView = viewConfigurator.setupAdvertBackView(view)
+        advertCollectionView = viewConfigurator.setupAdvertCollectionView(advertBackView)
         advertCollectionView.dataSource = self
-        
-        advertBackView.addSubview(advertCollectionView)
-        
-        advertCollectionView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview()
-            make.top.bottom.equalToSuperview().inset(10)
-        }
     }
     
     private func setupFiltersView() {
-        filtersBackView.backgroundColor = .white
-        view.addSubview(filtersBackView)
-        
-        filtersBackView.snp.makeConstraints { make in
-            make.top.equalTo(advertBackView.snp.bottom)
-            make.leading.trailing.equalToSuperview()
-            make.height.equalTo(80)
-        }
-        
-        let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
-        layout.sectionInset = UIEdgeInsets(top: 20, left: 10, bottom: 10, right: 10)
-        layout.itemSize = CGSize(width: 150, height: 40)
-        layout.scrollDirection = .horizontal
-
-        filtersCollectionView = UICollectionView(frame: CGRect(), collectionViewLayout: layout)
-        filtersCollectionView.register(FilterCollectionViewCell.self, forCellWithReuseIdentifier: "filterCell")
-        filtersCollectionView.backgroundColor = .white
-        filtersCollectionView.alwaysBounceHorizontal = true
+        filtersBackView = viewConfigurator.setupFiltersBackView(view, under: advertBackView)
+        filtersCollectionView = viewConfigurator.setupFiltersCollectionView(filtersBackView)
         filtersCollectionView.dataSource = self
-
-        filtersBackView.addSubview(filtersCollectionView)
-
-        filtersCollectionView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview()
-            make.top.bottom.equalToSuperview().inset(10)
-        }
     }
     
     private func setupTableView() {
+        menuTableView = viewConfigurator.setupTableView(view, under: filtersBackView)
         menuTableView.dataSource = self
         menuTableView.delegate = self
-        menuTableView.register(CustomTableViewCell.self, forCellReuseIdentifier: "menuCell")
-        menuTableView.backgroundColor = .white
-        menuTableView.allowsSelection = false
-        menuTableView.separatorColor = .white
-        
-        view.addSubview(menuTableView)
-        
-        menuTableView.snp.makeConstraints { make in
-            make.top.equalTo(filtersBackView.snp.bottom).offset(10)
-            make.leading.trailing.bottom.equalToSuperview()
-        }
     }
     
     @objc private func filterButtonTapped(sender: UIButton) {
@@ -155,7 +102,9 @@ final class MenuViewController: UIViewController {
         filtersCollectionView.scrollToItem(at: indexForCollectionView,
                                            at: .centeredHorizontally,
                                            animated: true)
-        menuTableView.scrollToRow(at: indexForTableView, at: .top, animated: true)
+        if menuTableView.numberOfSections > 0 {
+            menuTableView.scrollToRow(at: indexForTableView, at: .top, animated: true)
+        }
     }
     
     private func setButtonColor(_ button: UIButton?) {
